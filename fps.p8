@@ -45,10 +45,6 @@ function idleAnim()
     --Background: fishy blue
     rectfill(0,0,127,127,7)
 
-    --Draw horizon in background for after X is pressed and head moves
-    drawHorizon(flr(zOffset), 124, 100, 0x05)
-    drawHorizon(flr(zOffset), 100, 76, 0x56)
-    drawHorizon(flr(zOffset), 76, 42, 0x67)
     --Draw circle head
     circfill(-130 + xOffset,46 + yOffset,300,12)
     
@@ -180,6 +176,19 @@ function drawHorizon(offset, startI, endJ, color)
     fillp(0)
 end
 
+function drawBuilding(x, y, xOffset, yOffset, width, height, color)
+    rectfill(((x + xOffset) % (128 + width)) - width, (y + yOffset) - height, (0 + xOffset) % (128 + width), y + yOffset, color)
+end
+
+function drawBuildings(y, xOffset, yOffset, color)
+    rectfill(0, (y + yOffset % 128), 128, 128, color)
+    drawBuilding(0, y, xOffset, yOffset, 28, 64, color)
+    drawBuilding(0, y, xOffset + 32, yOffset, 28, 48, color)
+    drawBuilding(0, y, xOffset + 64, yOffset, 28, 56, color)
+    drawBuilding(0, y, xOffset + 96, yOffset, 28, 48, color)
+    drawBuilding(0, y, xOffset + 126, yOffset, 28, 56, color)
+end
+
 function introAnim()
     
     escapeCounter += 1
@@ -191,22 +200,23 @@ function introAnim()
     if(yOffset < 24) then
         animCount += 1
         if(animCount < 80) then
-            yOffset = -bobble(0, animCount, 20, 39, 0, 0.25)
+            yOffset = -bobble(0, animCount, 20, 500, 0, 0.25)
         end
     end
 
     -- Background color white
     rectfill(0,0,127,127,7)
     -- Dynamic horizon shapes
-    rectfill(0, 112 + flr(yOffset / 4), 128, 128, 0)
+    rectfill(0, 112 + flr(-yOffset / 4), 128, 128, 0)
     drawHorizon(yOffset / -4, 124, 100, 0x05)
     drawHorizon(yOffset / -4, 100, 76, 0x56)
     drawHorizon(yOffset / -4, 76, 42, 0x67)
+    drawBuildings(100, xOffset / 4, yOffset / -4, 5)
     -- Entry building
     map(0, 0, 0 + xOffset, 0, 24, 16)
 
     for i=0,17 do
-        pal(7, 5 + (i%3))
+        pal(7, 7)
         spr(60, (((i * 8) + xOffset) % 136) - 8, 120 - yOffset, 1, 1)
     end
 
@@ -271,11 +281,11 @@ eeeeeeeeeeeee77777777777777777777797979797999eeeeeeeeeee000000000000000000000000
 eeeeeeeeeeeeee777777777777777777777777797979eeeeeeeeeeee000000000000000000000000077777777777770000000000000000070777777000000000
 eeeeeeeeeeeeeee7777777777777777777979797999eeeeeeeeeeeee000000000000000000000000077777777777770007777777000007770777700000000000
 eeeeeeeeeeeeeeeee777777777777777777779797eeeeeeeeeeeeeee000000000777777777777700077777777777770077777777000777770770000000000000
-eeeeeeeeeeeeeeeeeee77777777777979797979eeeeeeeeeeeeeeeee077777770777777777777700077777777777770077777777077777770000000000000000
+eeeeeeeeeeeeeeeeeee77777777777979797979eeeeeeeeeeeeeeeee077777770777777777777700077777777777770076767676077777770000000000000000
 eeeeeeeeeeeeeeeeeeeeee77777777777779eeeeeeeeeeeeeeeeeeee077777770777777777777700077777777777770077777777077777700000000000000007
-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee077777770777777777777700077777777777770077777777077770000000000000000777
-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee077777770777777777777700077777777777770077777777077000000000000000077777
-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000777777777777700077777777777770077777777000000000000000007777777
+eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee077777770777777777777700077777777777770076767676077770000000000000000777
+eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee077777770777777777777700077777777777770067676767077000000000000000077777
+eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000777777777777700077777777777770066666666000000000000000007777777
 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee00000000000000000000000000eeeeeeeeeeeeeeeeeeeeeee0000eccc00eeeeee0000eccc00eeeeeeeeeee
 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000000000000000000000000000000000eeeeeeeeeeeeeeeeee0000cccc0eeeeeee0000cccc0eeeeeeeeeee
 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000000000000000000000000000000000000000000eeeeeeeeeee000000ccccceeeee000000ccccceeeeeeeeeee
