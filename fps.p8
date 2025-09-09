@@ -46,12 +46,15 @@ function idleAnim()
     palt(0, false)
     
     --background: fishy blue
-    rectfill(0,0,127,127,12)
-
+    rectfill(0,0,127,127,7)
+    circfill(-130 + xOffset,46 + yOffset,300,12)
+    
     --Draw text
-    print("fps",58,96,7)
-    print("(FISH PERSON SHOOTER)",23,102,7)
-    print("press ❎ to start",30,112,0)
+    printXOffset = xOffset / 3
+    printYOffset = yOffset / 3
+    print("fps",58 + printXOffset,96 + printYOffset,7)
+    print("(FISH PERSON SHOOTER)",23 + printXOffset,102 + printYOffset,7)
+    print("press ❎ to start",30 + printXOffset,112 + printYOffset,7)
 
     --Draw eyelash
     spr(64,25 + xOffset,32 + yOffset,11,8)
@@ -85,7 +88,7 @@ function offsetUpdate()
         xOffset = bobble(0, offsetCounter, 9, 5) - 6
         yOffset = bobble(0, offsetCounter, 14, 5) - 6
     elseif(mode == 2) then
-        escapeCounter += 1
+        escapeCounter += 2
         xOffset -= escapeCounter
     end
 end
