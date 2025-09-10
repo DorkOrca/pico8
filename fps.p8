@@ -40,7 +40,7 @@ player.FOV = 90
 --World variables
 --map width / height
 cellSize = 16
-h = 50
+h = 48
 mapA = 
 {
 {3, 1, 1, 1, 1, 1, 3,},
@@ -351,15 +351,15 @@ function movePlayer()
 
     if(btn(2)) then
         pa = player.zRot / 360
-        player.xVel = cos(pa / 512)
-        player.yVel = sin(pa / 512)
+        player.xVel = cos(pa)
+        player.yVel = sin(pa)
 
         player.xPos += player.xVel
         player.yPos += player.yVel
     elseif(btn(3)) then
         pa = player.zRot / 360
-        player.xVel = cos(pa / 512)
-        player.yVel = sin(pa / 512)
+        player.xVel = cos(pa)
+        player.yVel = sin(pa)
 
         player.xPos -= player.xVel
         player.yPos -= player.yVel
@@ -367,34 +367,25 @@ function movePlayer()
 end
 
 -- Map functions
-function drawMap(mapVal)
+function drawMap(mapVal, width, height)
     prevX = 0
     prevY = 0
-    mapWidth = #mapVal * 5
+    mapWidth = 128 / width
+    mapHeight = 128 / height
 
     for i = 1, #mapVal do
-        mapHeight = #mapVal[i] * 5
-        for j = 1, mapWidth do
-            rectfill(prevX, prevY, j * (128 / mapWidth), i * (128 / mapHeight), mapVal[i][j])
+        for j = 1, #mapVal[i] do
+            rectfill(prevX, prevY, j * (mapWidth / #mapVal), i * (mapHeight / #mapVal[i]), mapVal[i][j])
             -- -- Print coords for every square drawn (bug testing)
             -- print(j .. "," .. i, prevX, prevY, 4)
-            prevX = j * (128 / mapWidth)
+            prevX = j * (mapWidth / #mapVal)
         end
+    
         prevX = 0
-        prevY = i * (128 / mapHeight)
+        prevY = i * (mapHeight / #mapVal[i])
     end
-end
 
-function drawPlayer(circRadius, color)
-    x = player.xPos / 5
-    y = player.yPos / 5
-    pa = player.zRot / 360
-
-    vx = (cos(pa)) * 5
-    vy = (sin(pa)) * 5
-
-    circ(x, y, circRadius, color)
-    line(x, y, vx + x, vy + x, 7)
+    circfill((player.xPos / cellSize) * mapWidth, (player.yPos / cellSize) * mapHeight, 1, 7)
 end
 
 function debugRoom()
@@ -417,8 +408,7 @@ function drawRoom()
     cls()
     raycast()
     movePlayer()
-    drawMap(mapA)
-    drawPlayer(3, 7)
+    -- drawMap(mapA, 4, 4)
     
 end
 
