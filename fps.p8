@@ -32,6 +32,8 @@ animCount1 = 0
 player = {}
 player.xPos = 40
 player.yPos = 40
+player.xVel = 0
+player.yVel = 0
 player.zRot = 180
 player.FOV = 90
 
@@ -41,11 +43,13 @@ cellSize = 16
 h = 50
 mapA = 
 {
-{3, 1, 1, 1, 3,},
-{1, 0, 0, 0, 1,},
-{1, 0, 0, 0, 1,},
-{1, 0, 2, 0, 1,},
-{3, 1, 1, 1, 3,},
+{3, 1, 1, 1, 1, 1, 3,},
+{1, 0, 0, 2, 0, 0, 1,},
+{1, 0, 0, 0, 0, 0, 1,},
+{1, 0, 3, 0, 3, 0, 1,},
+{1, 0, 0, 0, 0, 0, 1,},
+{1, 0, 0, 2, 0, 0, 1,},
+{3, 1, 1, 1, 1, 1, 3,},
 }
 
 --Screen IDs
@@ -267,8 +271,9 @@ function raycast()
         px = player.xPos
         py = player.yPos
 
-        x = flr(player.xPos / cellSize)
-        y = flr(player.yPos / cellSize)
+        x = player.xPos / cellSize
+        y = player.yPos / cellSize
+
         pa = player.zRot / 360
 
         -- Find ray direction
@@ -298,7 +303,7 @@ function raycast()
 
         while true do
             -- Horizontal intersection
-            if (abs(x) < abs(oy)) then
+            if (abs(ox) < abs(oy)) then
                 x += ix
                 d = ox
                 ox += dx
@@ -310,20 +315,22 @@ function raycast()
             end
 
 	    if(d == 0) and (printed == false) then
-                print("error:",64,0,7)
-		print(ox < oy,64,8,7)
-		print(d,64,16,7)
-		print(ox,64,24,7)
-		print(oy,64,32,7)
+            print("error:",64,0,7)
+            print(ox < oy,64,8,7)
+            print("d: "..d,64,16,7)
+            print("ox: "..ox,64,24,7)
+            print("oy: "..oy,64,32,7)
+            print(ox-dx,64,40,7)
+            print(oy-dy,64,48,7)
 
-		printed = true
-		break
+            printed = true
+            break
 	    end
 
 
             // Check for collision
-            if (mapCollide(mapA, x, y) > 0 or x > #mapA or y > #mapA[1]) then
-                line(i, 64 - h / d, i, 64 + h / d, mapA[y][x])
+            if (mapCollide(mapA, flr(x), flr(y)) > 0 or x > #mapA or y > #mapA[1]) then
+                line(i, 64 - h / d, i, 64 + h / d, mapA[flr(y)][flr(x)])
                 break
             end
         end
@@ -340,6 +347,22 @@ function movePlayer()
         player.zRot += 3
     elseif(btn(1)) then
         player.zRot -= 3
+    end
+
+    if(btn(2)) then
+        pa = player.zRot / 360
+        player.xVel = cos(pa / 512)
+        player.yVel = sin(pa / 512)
+
+        player.xPos += player.xVel
+        player.yPos += player.yVel
+    elseif(btn(3)) then
+        pa = player.zRot / 360
+        player.xVel = cos(pa / 512)
+        player.yVel = sin(pa / 512)
+
+        player.xPos -= player.xVel
+        player.yPos -= player.yVel
     end
 end
 
@@ -374,13 +397,8 @@ function drawPlayer(circRadius, color)
     line(x, y, vx + x, vy + x, 7)
 end
 
-function drawRoom()
-    cls()
-    raycast()
-    movePlayer()
-    -- drawMap(mapA)
-    -- drawPlayer(3, 7)
-    -- print(player.zRot, 0, 0, 0)
+function debugRoom()
+    print(player.zRot, 0, 0, 0)
     print("x: "..x,0,48,8)
     print("y: "..y,0,56,8)
     print("ix: "..ix,0,0,7)
@@ -393,6 +411,15 @@ function drawRoom()
     print("h: "..h,0,72,9)
     print("dx: "..dx,0,80,7)
     print("dy: "..dy,0,88,7)
+end
+
+function drawRoom()
+    cls()
+    raycast()
+    movePlayer()
+    drawMap(mapA)
+    drawPlayer(3, 7)
+    
 end
 
 -->8
