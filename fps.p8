@@ -32,20 +32,20 @@ animCount1 = 0
 player = {}
 player.xPos = 40
 player.yPos = 40
-player.zRot = 45
+player.zRot = 180
 player.FOV = 90
 
 --World variables
 --map width / height
 cellSize = 16
-h = 20
+h = 50
 mapA = 
 {
-{1, 1, 1, 1, 1,},
+{3, 1, 1, 1, 3,},
 {1, 0, 0, 0, 1,},
 {1, 0, 0, 0, 1,},
-{1, 0, 1, 0, 1,},
-{1, 1, 1, 1, 1,},
+{1, 0, 2, 0, 1,},
+{3, 1, 1, 1, 3,},
 }
 
 --Screen IDs
@@ -298,7 +298,7 @@ function raycast()
 
         while true do
             -- Horizontal intersection
-            if (ox < oy) then
+            if (abs(x) < abs(oy)) then
                 x += ix
                 d = ox
                 ox += dx
@@ -308,17 +308,31 @@ function raycast()
                 d = oy
                 oy += dy
             end
+
+	    if(d == 0) and (printed == false) then
+                print("error:",64,0,7)
+		print(ox < oy,64,8,7)
+		print(d,64,16,7)
+		print(ox,64,24,7)
+		print(oy,64,32,7)
+
+		printed = true
+		break
+	    end
+
+
             // Check for collision
-            if (mapCollide(mapA, x, y) > 0 or x < #mapA or x > mapA[#1]) then
-                line(i, 64 - h / d, i, 64 + h / d, 12)
+            if (mapCollide(mapA, x, y) > 0 or x > #mapA or y > #mapA[1]) then
+                line(i, 64 - h / d, i, 64 + h / d, mapA[y][x])
                 break
             end
         end
     end
+    printed = false
 end
 
-function mapCollide(map, x, y)
-    return map[y][x]
+function mapCollide(mapVal, x, y)
+    return mapVal[y][x]
 end
 
 function movePlayer()
@@ -364,9 +378,21 @@ function drawRoom()
     cls()
     raycast()
     movePlayer()
-    drawMap(mapA)
-    drawPlayer(3, 7)
-    print(player.zRot, 0, 0, 0)
+    -- drawMap(mapA)
+    -- drawPlayer(3, 7)
+    -- print(player.zRot, 0, 0, 0)
+    print("x: "..x,0,48,8)
+    print("y: "..y,0,56,8)
+    print("ix: "..ix,0,0,7)
+    print("iy: "..iy,0,8,7)
+    print("vx: "..vx,0, 16,7)
+    print("vy: "..vy,0,24,7)
+    print("ox: "..ox,0,32,7)
+    print("oy: "..oy,0,40,7)
+    print("d: "..d,0,64,9)
+    print("h: "..h,0,72,9)
+    print("dx: "..dx,0,80,7)
+    print("dy: "..dy,0,88,7)
 end
 
 -->8
