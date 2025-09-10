@@ -28,6 +28,26 @@ mode = 1
 animCount = 0
 animCount1 = 0
 
+--Player variables
+player = {}
+player.xPos = 40
+player.yPos = 40
+player.zRot = 45
+player.FOV = 90
+
+--World variables
+--map width / height
+cellSize = 16
+h = 20
+mapA = 
+{
+{1, 1, 1, 1, 1,},
+{1, 0, 0, 0, 1,},
+{1, 0, 0, 0, 1,},
+{1, 0, 1, 0, 1,},
+{1, 1, 1, 1, 1,},
+}
+
 --Screen IDs
 
 screenID = 1
@@ -63,6 +83,7 @@ function idleAnim()
     browAnimate()
     pupilAnimate()
 end
+
 
 -- ANIMATIONS
 --return frame number given a counter, initial frame, width of frames and duration of each frame (30 = 1s)
@@ -222,19 +243,136 @@ function introAnim()
 
     spr(incFrame(escapeCounter, 75, 2, 90), animCount1, 90 - yOffset, 2, 3, true, false)
     spr(123, animCount1 - 3, 113 - yOffset, 3, 1)
+
+    if(xOffset == 0) then
+        screenID = 3
+    end
 end
 
 function menuSelect()
+    if(btn(5)) then
+        screenID = 3
+    end
     if(mode == 1) then
         introAnim()
     end
 end
 
 -->8
+--Raycasting
+function raycast()
+    -- For each X position
+    for i = 0, 127 do
+        -- Find starting tile
+        px = player.xPos
+        py = player.yPos
+
+        x = flr(player.xPos / cellSize)
+        y = flr(player.yPos / cellSize)
+        pa = player.zRot / 360
+
+        -- Find ray direction
+        vx = cos(pa - (i - 64) / 512)
+        vy = sin(pa - (i - 64) / 512)
+
+        -- Find standard distance
+        dx = abs(1 / vx)
+        dy = abs(1 / vy)
+
+        -- Find increment value
+        ix = vx > 0 and 1 or -1
+        iy = vy > 0 and 1 or -1
+
+        -- Find initial offset
+        if (vx > 0) then
+            ox = (flr(x) - x + 1) / vx
+        else
+            ox = abs((x - flr(x)) / vx)
+        end
+
+        if (vy > 0) then
+            oy = (flr(y) - y + 1) / vy
+        else
+            oy = abs((y - flr(y)) / vy)
+        end
+
+        while true do
+            -- Horizontal intersection
+            if (ox < oy) then
+                x += ix
+                d = ox
+                ox += dx
+            -- Vertical intersection
+            else
+                y += iy
+                d = oy
+                oy += dy
+            end
+            // Check for collision
+            if (mapCollide(mapA, x, y) > 0 or x < #mapA or x > mapA[#1]) then
+                line(i, 64 - h / d, i, 64 + h / d, 12)
+                break
+            end
+        end
+    end
+end
+
+function mapCollide(map, x, y)
+    return map[y][x]
+end
+
+function movePlayer()
+    if(btn(0)) then
+        player.zRot += 3
+    elseif(btn(1)) then
+        player.zRot -= 3
+    end
+end
+
+-- Map functions
+function drawMap(mapVal)
+    prevX = 0
+    prevY = 0
+    mapWidth = #mapVal * 5
+
+    for i = 1, #mapVal do
+        mapHeight = #mapVal[i] * 5
+        for j = 1, mapWidth do
+            rectfill(prevX, prevY, j * (128 / mapWidth), i * (128 / mapHeight), mapVal[i][j])
+            -- -- Print coords for every square drawn (bug testing)
+            -- print(j .. "," .. i, prevX, prevY, 4)
+            prevX = j * (128 / mapWidth)
+        end
+        prevX = 0
+        prevY = i * (128 / mapHeight)
+    end
+end
+
+function drawPlayer(circRadius, color)
+    x = player.xPos / 5
+    y = player.yPos / 5
+    pa = player.zRot / 360
+
+    vx = (cos(pa)) * 5
+    vy = (sin(pa)) * 5
+
+    circ(x, y, circRadius, color)
+    line(x, y, vx + x, vy + x, 7)
+end
+
+function drawRoom()
+    cls()
+    raycast()
+    movePlayer()
+    drawMap(mapA)
+    drawPlayer(3, 7)
+    print(player.zRot, 0, 0, 0)
+end
+
+-->8
 
 -- where the magic happens
 function _update()
-    
 end
 
 function _draw()
@@ -242,6 +380,7 @@ function _draw()
     {
         [1] = startScreen,
         [2] = menuSelect,
+        [3] = drawRoom
     }
 
     local func = c_tbl[screenID]
@@ -250,7 +389,7 @@ function _draw()
         func()
     else
         print("ERROR", 8)
-        print("Got lost! Resetting...", 7)
+        print("Got lost! screenID: " .. screenID, 7)
     end
 end
 __gfx__
