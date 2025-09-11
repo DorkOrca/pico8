@@ -40,7 +40,7 @@ player.FOV = 90
 --World variables
 --map width / height
 cellSize = 16
-h = 48
+h = 40
 mapA = 
 {
 {3, 1, 1, 1, 1, 1, 3,},
@@ -51,6 +51,24 @@ mapA =
 {1, 0, 0, 2, 0, 0, 1,},
 {3, 1, 1, 1, 1, 1, 3,},
 }
+
+mapB =
+{
+{3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,},
+{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,},
+{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,},
+{1, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 1,},
+{1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1,},
+{1, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 1,},
+{1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,},
+{1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,},
+{1, 0, 0, 2, 1, 1, 1, 1, 1, 1, 2, 1,},
+{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,},
+{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,},
+{3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,},
+}
+
+currentMap = mapB
 
 --Screen IDs
 
@@ -163,6 +181,7 @@ function browAnimate()
         browY = bobble(browTrueY, animCount, 6, 2, 0.25, 0.75)
 
         animCount += 1
+    -- Use RNG to determine if brow should be twitching
     elseif(flr(rnd(100)) == 1) then
         animCount = 0
     end
@@ -172,6 +191,7 @@ end
 
 --Pupil wiggle
 function pupilAnimate()
+    -- Animate pupil for 36 frames, then don't animate for 12 frames, then start again
     if(animCount1 < 36) then
         pupilX = bobble(pupilTrueX, animCount1, 1.5, 1, 0.25, 0.75)
     elseif(animCount1 >= 48) then
@@ -182,8 +202,18 @@ function pupilAnimate()
 
     spr(1,pupilX + xOffset,pupilY + yOffset,6,4)
 end
+
+
 -->8
+-- Intro after starting game
+
+-- Draw gradients for horizon
 function drawHorizon(offset, startI, endJ, color)
+    -- Fills follow a 4x4 map. example of the first one:
+    -- 1111
+    -- 0101
+    -- 1111
+    -- 0101
     fills = {0b1111010111110101, 0b0101101001011010, 0b0101000001010000}
 
     i = startI
@@ -201,10 +231,12 @@ function drawHorizon(offset, startI, endJ, color)
     fillp(0)
 end
 
+-- Draw a single building (just a rectangle)
 function drawBuilding(x, y, xOffset, yOffset, width, height, color)
     rectfill(((x + xOffset) % (128 + width)) - width, (y + yOffset) - height, (0 + xOffset) % (128 + width), y + yOffset, color)
 end
 
+-- Draw a horizon and multiple buildings
 function drawBuildings(y, xOffset, yOffset, color)
     rectfill(0, (y + yOffset % 128), 128, 128, color)
     drawBuilding(0, y, xOffset, yOffset, 28, 64, color)
@@ -214,8 +246,8 @@ function drawBuildings(y, xOffset, yOffset, color)
     drawBuilding(0, y, xOffset + 126, yOffset, 28, 56, color)
 end
 
+-- Intro animation structure
 function introAnim()
-    
     escapeCounter += 1
     if(escapeCounter < 400) then
        xOffset = -5*bobble(0, escapeCounter, 100, 500, 0, 0.25)
@@ -313,24 +345,16 @@ function raycast()
                 d = oy
                 oy += dy
             end
-
-	    if(d == 0) and (printed == false) then
-            print("error:",64,0,7)
-            print(ox < oy,64,8,7)
-            print("d: "..d,64,16,7)
-            print("ox: "..ox,64,24,7)
-            print("oy: "..oy,64,32,7)
-            print(ox-dx,64,40,7)
-            print(oy-dy,64,48,7)
-
-            printed = true
-            break
-	    end
-
+            if (d == nil or d == 0) then
+                errorD(d)
+            end
 
             // Check for collision
-            if (mapCollide(mapA, flr(x), flr(y)) > 0 or x > #mapA or y > #mapA[1]) then
-                line(i, 64 - h / d, i, 64 + h / d, mapA[flr(y)][flr(x)])
+            if (mapCollide(currentMap, flr(x), flr(y)) > 0 or x > #currentMap or y > #currentMap[1] or x <= 0 or y <= 0) then
+                _result = mapCollide(currentMap, flr(x), flr(y))
+                if(_result != 7) then
+                    line(i, 64 - h / d, i, 64 + h / d, _result)
+                end
                 break
             end
         end
@@ -338,31 +362,90 @@ function raycast()
     printed = false
 end
 
-function mapCollide(mapVal, x, y)
-    return mapVal[y][x]
+-- Get value from a map table - returns nil if out of range
+function mapCollide(_mapVal, _x, _y)
+    if (_x > 0 and _y > 0 and _x <= #_mapVal and _y <= #_mapVal[1]) then
+        return _mapVal[_y][_x]
+    else
+        return 7
+    end
 end
 
+-- Log error if d = 0, and only log first instance of this error (first vertical line that doesn't ray trace properly)
+function errorD(_d)
+    if(d == 0) and (printed == false) then
+        print("error:",64,0,7)
+        print(ox < oy,64,8,7)
+        print("d: ".._d,64,16,7)
+        print("ox: "..ox,64,24,7)
+        print("oy: "..oy,64,32,7)
+        print(ox-dx,64,40,7)
+        print(oy-dy,64,48,7)
+
+        printed = true
+    end
+end
+
+function move(_map, _x, _y, _xDist, _yDist)
+    _moveDist = {}
+
+    _moveDist[x] = mapObjectCollision(_map, _x, _y, _xDist, _yDist)[x] and mapEdgeCollision(_x, _xDist, #_map) or 0
+    _moveDist[y] = mapObjectCollision(_map, _x, _y, _xDist, _yDist)[y] and mapEdgeCollision(_y, _yDist, #_map[1]) or 0
+
+    return _moveDist
+end
+
+-- Detect if edge of objects will be collided with after moving
+function mapObjectCollision(_map, _x, _y, _xDist, _yDist)
+    _result = {}
+    
+    _objX = flr(_x + _xDist)
+    _objY = flr(_y + _yDist)
+
+    _result[x] = _map[_x][_objY] == 0 and false or true
+    _result[y] = _map[_objX][_y] == 0 and false or true
+
+    return _result
+end
+
+-- Used by move() function to calculate if edge of map will be collided with after moving 
+function mapEdgeCollision(_i, _dist, _maxDist)
+    if(flr(_i + _dist) > 0 and flr(_i + _dist) <= _maxDist) then
+        return _dist
+    else
+        return 0
+    end
+end
+
+-- Move player if arrows are pressed
 function movePlayer()
+    -- Rotate player
     if(btn(0)) then
         player.zRot += 3
     elseif(btn(1)) then
         player.zRot -= 3
     end
 
+    -- Move player forward / backward, determining direction speed 
     if(btn(2)) then
         pa = player.zRot / 360
         player.xVel = cos(pa)
         player.yVel = sin(pa)
+        
+        _coords = move(currentMap, player.xPos / cellSize, player.yPos / cellSize, player.xVel / cellSize, player.yVel / cellSize)
 
-        player.xPos += player.xVel
-        player.yPos += player.yVel
+        player.xPos += _coords[x] * cellSize
+        player.yPos += _coords[y] * cellSize
+
     elseif(btn(3)) then
         pa = player.zRot / 360
         player.xVel = cos(pa)
         player.yVel = sin(pa)
 
-        player.xPos -= player.xVel
-        player.yPos -= player.yVel
+        _coords = move(currentMap, player.xPos / cellSize, player.yPos / cellSize, -player.xVel / cellSize, -player.yVel / cellSize)
+        
+        player.xPos += _coords[x] * cellSize
+        player.yPos += _coords[y] * cellSize
     end
 end
 
@@ -389,15 +472,14 @@ function drawMap(mapVal, width, height)
 end
 
 function debugRoom()
-    print(player.zRot, 0, 0, 0)
-    print("x: "..x,0,48,8)
-    print("y: "..y,0,56,8)
     print("ix: "..ix,0,0,7)
     print("iy: "..iy,0,8,7)
     print("vx: "..vx,0, 16,7)
     print("vy: "..vy,0,24,7)
     print("ox: "..ox,0,32,7)
     print("oy: "..oy,0,40,7)
+    print("x: "..x,0,48,8)
+    print("y: "..y,0,56,8)
     print("d: "..d,0,64,9)
     print("h: "..h,0,72,9)
     print("dx: "..dx,0,80,7)
@@ -405,7 +487,8 @@ function debugRoom()
 end
 
 function drawRoom()
-    cls()
+    cls(0)
+    rectfill(0,0,127,64,7)
     raycast()
     movePlayer()
     -- drawMap(mapA, 4, 4)
@@ -460,8 +543,8 @@ eeeeeeeeeee777777777777777700777777779797979799eeeeeeeee0000000000000eeeeee00000
 eeeeeeeeeee797777777777777777777779797979799999eeeeeeeee00000000000000eeee000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0007777777777777
 eeeeeeeeeeee7777777777777777777777777779797979eeeeeeeeee000000000000000ee0000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0777777777777777
 eeeeeeeeeeeee77777777777777777777797979797999eeeeeeeeeee000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee7777777777777777
-eeeeeeeeeeeeee777777777777777777777777797979eeeeeeeeeeee000000000000000000000000077777777777770000000000000000070777777000000000
-eeeeeeeeeeeeeee7777777777777777777979797999eeeeeeeeeeeee000000000000000000000000077777777777770007777777000007770777700000000000
+eeeeeeeeeeeeee777777777777777777777777797979eeeeeeeeeeee0000000000000000000000000777777777777700eeeeeeee000000070777777000000000
+eeeeeeeeeeeeeee7777777777777777777979797999eeeeeeeeeeeee0000000000000000000000000777777777777700e7777777000007770777700000000000
 eeeeeeeeeeeeeeeee777777777777777777779797eeeeeeeeeeeeeee000000000777777777777700077777777777770077777777000777770770000000000000
 eeeeeeeeeeeeeeeeeee77777777777979797979eeeeeeeeeeeeeeeee077777770777777777777700077777777777770076767676077777770000000000000000
 eeeeeeeeeeeeeeeeeeeeee77777777777779eeeeeeeeeeeeeeeeeeee077777770777777777777700077777777777770077777777077777700000000000000007
