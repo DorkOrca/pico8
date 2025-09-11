@@ -389,8 +389,8 @@ end
 function move(_map, _x, _y, _xDist, _yDist)
     _moveDist = {}
 
-    _moveDist[x] = mapObjectCollision(_map, _x, _y, _xDist, _yDist)[x] and mapEdgeCollision(_x, _xDist, #_map) or 0
-    _moveDist[y] = mapObjectCollision(_map, _x, _y, _xDist, _yDist)[y] and mapEdgeCollision(_y, _yDist, #_map[1]) or 0
+    _moveDist[x] = mapObjectCollision(_map, _x, _y, _xDist, _yDist).x and 0 or mapEdgeCollision(_x, _xDist, #_map)
+    _moveDist[y] = mapObjectCollision(_map, _x, _y, _xDist, _yDist).y and 0 or mapEdgeCollision(_y, _yDist, #_map[1])
 
     return _moveDist
 end
@@ -401,9 +401,23 @@ function mapObjectCollision(_map, _x, _y, _xDist, _yDist)
     
     _objX = flr(_x + _xDist)
     _objY = flr(_y + _yDist)
+    
+    if (_objX > 0 and _y > 0) then
+        _result[x] = _map[_y][_objX] == 0 and false or true
+    else
+        _result[x] = true
+    end
 
-    _result[x] = _map[_x][_objY] == 0 and false or true
-    _result[y] = _map[_objX][_y] == 0 and false or true
+    if(_x > 0 and _objY > 0) then
+        _result[y] = _map[_objY][_x] == 0 and false or true
+    else
+        _result[y] = true
+    end
+    
+    print(_x, 0)
+    print(_y, 0)
+    print(_objX, 0)
+    print(_objY, 0)
 
     return _result
 end
@@ -491,7 +505,7 @@ function drawRoom()
     rectfill(0,0,127,64,7)
     raycast()
     movePlayer()
-    -- drawMap(mapA, 4, 4)
+    -- drawMap(currentMap, 4, 4)
     
 end
 
