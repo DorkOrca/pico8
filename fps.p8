@@ -386,38 +386,29 @@ function errorD(_d)
     end
 end
 
-function move(_map, _x, _y, _xDist, _yDist)
-    _moveDist = {}
-
-    _moveDist[x] = mapObjectCollision(_map, _x, _y, _xDist, _yDist).x and 0 or mapEdgeCollision(_x, _xDist, #_map)
-    _moveDist[y] = mapObjectCollision(_map, _x, _y, _xDist, _yDist).y and 0 or mapEdgeCollision(_y, _yDist, #_map[1])
-
-    return _moveDist
-end
-
 -- Detect if edge of objects will be collided with after moving
 function mapObjectCollision(_map, _x, _y, _xDist, _yDist)
     _result = {}
     
+    _playerX = flr(_x)
+    _playerY = flr(_y)
+
     _objX = flr(_x + _xDist)
     _objY = flr(_y + _yDist)
+
+    print(_map[_playerY][_objX], 0)
     
-    if (_objX > 0 and _y > 0) then
-        _result[x] = _map[_y][_objX] == 0 and false or true
+    if (_objX > 0 and _objX < #_map[1] and _playerY > 0 and _playerY < #_map) then
+        _result[x] = _map[_playerY][_objX] > 0 and 0 or 1
     else
-        _result[x] = true
+        _result[x] = 0
     end
 
-    if(_x > 0 and _objY > 0) then
-        _result[y] = _map[_objY][_x] == 0 and false or true
+    if(_playerX > 0 and _playerX < #_map[1] and _objY > 0 and _objY < #_map) then
+        _result[y] = _map[_objY][_playerX] > 0 and 0 or 1
     else
-        _result[y] = true
+        _result[y] = 0
     end
-    
-    print(_x, 0)
-    print(_y, 0)
-    print(_objX, 0)
-    print(_objY, 0)
 
     return _result
 end
@@ -429,6 +420,18 @@ function mapEdgeCollision(_i, _dist, _maxDist)
     else
         return 0
     end
+end
+
+function move(_x, _y, _xDist, _yDist)
+    _moveDist = {}
+    _mapObjects = mapObjectCollision(currentMap, _x, _y, _xDist, _yDist)
+
+    print(_mapObjects[x], 0)
+    print(_mapObjects[y], 0)
+    _moveDist[x] = _mapObjects[x] == 0 and 0 or mapEdgeCollision(_x, _xDist, #currentMap)
+    _moveDist[y] = _mapObjects[y] == 0 and 0 or mapEdgeCollision(_y, _yDist, #currentMap[1])
+
+    return _moveDist
 end
 
 -- Move player if arrows are pressed
@@ -446,7 +449,7 @@ function movePlayer()
         player.xVel = cos(pa)
         player.yVel = sin(pa)
         
-        _coords = move(currentMap, player.xPos / cellSize, player.yPos / cellSize, player.xVel / cellSize, player.yVel / cellSize)
+        _coords = move(player.xPos / cellSize, player.yPos / cellSize, player.xVel / cellSize, player.yVel / cellSize)
 
         player.xPos += _coords[x] * cellSize
         player.yPos += _coords[y] * cellSize
@@ -456,7 +459,7 @@ function movePlayer()
         player.xVel = cos(pa)
         player.yVel = sin(pa)
 
-        _coords = move(currentMap, player.xPos / cellSize, player.yPos / cellSize, -player.xVel / cellSize, -player.yVel / cellSize)
+        _coords = move(player.xPos / cellSize, player.yPos / cellSize, -player.xVel / cellSize, -player.yVel / cellSize)
         
         player.xPos += _coords[x] * cellSize
         player.yPos += _coords[y] * cellSize
