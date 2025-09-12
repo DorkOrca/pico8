@@ -512,10 +512,12 @@ function generateMap(_width, _height, _enemyCount, _goodiesCount, _difficulty, _
     -- Nested table containing values for map cells
     _genMap = {}
     -- Nested table containing values for whether a given cell's state is finalized
+    -- 0: Not plotted
+    -- 1: Plotted but not finalized (surrounding cells have not been fully inspected yet)
+    -- 2: Plotted and finalized
     _plotted = {}
     -- Value for current map coords
-    _currentCoords = {[x] = 2, [y] = 2}
-    _plotComplete = false
+    _currentCoords = {x = 2, y = 2}
 
     -- Set walls of map
     -- Iterate through all Y positions
@@ -527,10 +529,10 @@ function generateMap(_width, _height, _enemyCount, _goodiesCount, _difficulty, _
         for j = 1, _width do
             if(i == 1 or i == _height or j == 1 or j == _width) then
                 _genMap[i][j] = 1
-                _plotted[i][j] = true
+                _plotted[i][j] = 2
             else
                 _genMap[i][j] = 0
-                _plotted[i][j] = false
+                _plotted[i][j] = 0
             end
         end
     end
@@ -538,7 +540,7 @@ function generateMap(_width, _height, _enemyCount, _goodiesCount, _difficulty, _
     -- Ensure that starting cell (2, 2) is finalized as empty
     _plotted[2][2] = true
 
-    while (!_plotComplete) do
+    while (_plotComplete == false) do
         _genProg = generateMaze(_genMap, _plotted, _currentCoords)
         _genMap = _genProg.genMap
         _plotted = _genProg.plotted
@@ -549,7 +551,25 @@ function generateMap(_width, _height, _enemyCount, _goodiesCount, _difficulty, _
 end
 
 function generateMaze(_genMap, _plotted, _coords)
-    
+    _maxX = #_genMap[1]
+    _maxY = #_genMap
+    _options = {}
+
+    -- List of all possible directions that lead the current cell to the next cell
+    _directions =
+    {
+        {x = 2, y = 0}
+        {x = 0, y = 2}
+        {x = -2, y = 0}
+        {x = 0, y = -2}
+    }
+
+    -- Check if neighboring cells are out-of-bounds; if not, then add them to list of potential options for dest cell
+    for i = 1, 4 do
+        if (_coords.x + _directions.i.x > 2 and _coords.x + _directions.i.x < _maxX - 1 and _coords.y + _directions.i.y > 2 and _coords.y + _directions.i.y < _maxY - 1) then
+            _options[#_options + 1] = i
+        end
+    end
 end
 
 
@@ -578,6 +598,7 @@ function _draw()
     else
         print("ERROR", 8)
         print("Got lost! screenID: " .. screenID, 7)
+        break
     end
 end
 __gfx__
