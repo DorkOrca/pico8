@@ -28,15 +28,6 @@ mode = 1
 animCount = 0
 animCount1 = 0
 
---Player variables
-player = {}
-player.xPos = 40
-player.yPos = 40
-player.xVel = 0
-player.yVel = 0
-player.zRot = 180
-player.FOV = 90
-
 --World variables
 --map width / height
 cellSize = 16
@@ -69,6 +60,15 @@ mapB =
 }
 
 currentMap = mapB
+
+--Player variables
+player = {}
+player.xPos = cellSize * 2.5
+player.yPos = cellSize * 2.5
+player.xVel = 0
+player.yVel = 0
+player.zRot = 0
+player.FOV = 90
 
 --Screen IDs
 
@@ -308,7 +308,7 @@ function raycast()
 
         pa = player.zRot / 360
 
-        -- Find ray direction
+        -- Find ray direction (panoramic)
         vx = cos(pa - (i - 64) / 512)
         vy = sin(pa - (i - 64) / 512)
 
@@ -371,45 +371,35 @@ function mapCollide(_mapVal, _x, _y)
     end
 end
 
--- Log error if d = 0, and only log first instance of this error (first vertical line that doesn't ray trace properly)
-function errorD(_d)
-    if(d == 0) and (printed == false) then
-        print("error:",64,0,7)
-        print(ox < oy,64,8,7)
-        print("d: ".._d,64,16,7)
-        print("ox: "..ox,64,24,7)
-        print("oy: "..oy,64,32,7)
-        print(ox-dx,64,40,7)
-        print(oy-dy,64,48,7)
-
-        printed = true
-    end
-end
-
 -- Detect if edge of objects will be collided with after moving
 function mapObjectCollision(_map, _x, _y, _xDist, _yDist)
     _result = {}
     
+    -- Get floor of player's X position
     _playerX = flr(_x)
     _playerY = flr(_y)
 
+    -- Get floor of player's X position plus the provided offsets if player moves on X or Y axis
     _objX = flr(_x + _xDist)
     _objY = flr(_y + _yDist)
-
-    print(_map[_playerY][_objX], 0)
     
+    -- If the player's offset X position and true Y position don't intersect with an occupied cell on the map...
     if (_objX > 0 and _objX < #_map[1] and _playerY > 0 and _playerY < #_map) then
+        -- ...Then check if the player's new X position intersects with an occupied cell on the map using a ternary statement
+        -- If intersects, then mark as 0. If not, then mark as 1.
         _result[x] = _map[_playerY][_objX] > 0 and 0 or 1
     else
         _result[x] = 0
     end
 
+    -- Same as above but for true X position and offset Y position
     if(_playerX > 0 and _playerX < #_map[1] and _objY > 0 and _objY < #_map) then
         _result[y] = _map[_objY][_playerX] > 0 and 0 or 1
     else
         _result[y] = 0
     end
 
+    -- Return table with X and Y values mapped to whether or not the new X / Y positions intersect with an occupied cell on the map
     return _result
 end
 
@@ -512,9 +502,64 @@ function drawRoom()
     
 end
 
+
+-->8
+-- CONTENT GENERATION
+-- Generate a map with walls at map edges + algorithmic maze generation 
+-- Map consists of tables of equal width within a larger table
+-- Root table maps Y coords while sub-tables map X coords and contain the values for walls / empty space
+function generateMap(_width, _height, _enemyCount, _goodiesCount, _difficulty, _tileset)
+    -- Nested table containing values for map cells
+    _genMap = {}
+    -- Nested table containing values for whether a given cell's state is finalized
+    _plotted = {}
+    -- Value for current map coords
+    _currentCoords = {[x] = 2, [y] = 2}
+    _plotComplete = false
+
+    -- Set walls of map
+    -- Iterate through all Y positions
+    for i = 1, _height do
+        -- Initialize Y axis table
+        _genMap[i] = {}
+        _plotted[i] = {}
+        -- Iterate through all X positions on table
+        for j = 1, _width do
+            if(i == 1 or i == _height or j == 1 or j == _width) then
+                _genMap[i][j] = 1
+                _plotted[i][j] = true
+            else
+                _genMap[i][j] = 0
+                _plotted[i][j] = false
+            end
+        end
+    end
+
+    -- Ensure that starting cell (2, 2) is finalized as empty
+    _plotted[2][2] = true
+
+    while (!_plotComplete) do
+        _genProg = generateMaze(_genMap, _plotted, _currentCoords)
+        _genMap = _genProg.genMap
+        _plotted = _genProg.plotted
+        _plotComplete = _genProg.plotComplete
+    end
+
+    return _genMap
+end
+
+function generateMaze(_genMap, _plotted, _coords)
+    
+end
+
+
 -->8
 
 -- where the magic happens
+function _init()
+    currentMap = generateMap(3, 3, 0, 0, 0, 0)
+end
+
 function _update()
 end
 
