@@ -1,4 +1,4 @@
-pico-8 cartridge // http://www.pico-8.com
+.pico-. cartridge // http://www.pico-8.com
 version 43
 __lua__
 -- fps - fish person shooter
@@ -498,7 +498,7 @@ function drawRoom()
     rectfill(0,0,127,64,7)
     raycast()
     movePlayer()
-    -- drawMap(currentMap, 4, 4)
+    drawMap(currentMap, 4, 4)
     
 end
 
@@ -528,48 +528,120 @@ function generateMap(_width, _height, _enemyCount, _goodiesCount, _difficulty, _
         -- Iterate through all X positions on table
         for j = 1, _width do
             if(i == 1 or i == _height or j == 1 or j == _width) then
-                _genMap[i][j] = 1
+                _genMap[i][j] = 2
                 _plotted[i][j] = 2
             else
-                _genMap[i][j] = 0
+                _genMap[i][j] = 1
                 _plotted[i][j] = 0
             end
         end
     end
 
     -- Ensure that starting cell (2, 2) is finalized as empty
-    _plotted[2][2] = true
+    _genMap[2][2] = 0
+    _plotted[2][2] = 0
+
+    -- Debug value
+    _stage = 0
+
+    _plotComplete = false
 
     while (_plotComplete == false) do
         _genProg = generateMaze(_genMap, _plotted, _currentCoords)
         _genMap = _genProg.genMap
         _plotted = _genProg.plotted
+        _currentCoords = _genProg.coords
+        _stage += 1
+        print(_stage, 7)
+
         _plotComplete = _genProg.plotComplete
     end
 
+    print("Map gen completed", 7)
     return _genMap
 end
 
 function generateMaze(_genMap, _plotted, _coords)
-    _maxX = #_genMap[1]
-    _maxY = #_genMap
+    _map = _genMap
+    _coordinates = _coords
+
+    _maxY = #_genMap[1]
+    _maxX = #_genMap
     _options = {}
 
-    -- List of all possible directions that lead the current cell to the next cell
+    _genProg = {}
+
+    _choice = 0
+
+    _genProg.plotComplete = false
+
+    -- Set current coords to 0
+    _map[_coordinates.y][_coordinates.x] = 0
+
+    -- List of all possible directions that lead the current cell to surrounding cells in cardinal directions
     _directions =
     {
-        {x = 2, y = 0}
-        {x = 0, y = 2}
-        {x = -2, y = 0}
-        {x = 0, y = -2}
+        {x = 2, y = 0, ix = 1, iy = 0,},
+        {x = 0, y = 2, ix = 0, iy = 1,},
+        {x = -2, y = 0, ix = -1, iy = 0,},
+        {x = 0, y = -2, ix = 0, iy = -1,},
     }
 
-    -- Check if neighboring cells are out-of-bounds; if not, then add them to list of potential options for dest cell
-    for i = 1, 4 do
-        if (_coords.x + _directions.i.x > 2 and _coords.x + _directions.i.x < _maxX - 1 and _coords.y + _directions.i.y > 2 and _coords.y + _directions.i.y < _maxY - 1) then
-            _options[#_options + 1] = i
+    -- If current cell isn't finalized, then search surroundings for unexplored cell and move to it
+    if  (_plotted[_coordinates.y][_coordinates.x] < 2) then
+        -- Check if neighboring cells are out-of-bounds and not yet explored; if not, then add them to list of potential options for dest cell
+        for i = 1, 4 do
+            if (_coordinates.x + _directions[i].x > 1 and _coordinates.x + _directions[i].x < _maxX - 1 and _coordinates.y + _directions[i].y > 1 and _coordinates.y + _directions[i].y < _maxY - 1 and _plotted[_coordinates.y + _directions[i].y][_coordinates.x + _directions[i].x] == 0) then
+                _options[#_options + 1] = i
+            end
+        end
+
+        -- If options list isn't empty...
+        if(#_options > 0) then
+            --  Set choice to any of the option tables at random
+            _choice = flr(rnd(#_options)) + 1
+            -- Plot current cell
+            _plotted[_coordinates.y][_coordinates.x] = 1
+            -- Set intersecting square as empty space
+            _map[_coordinates.y + _directions._choice.iy][_coordinates.x + _directions._choice.ix] = 0
+            -- Set new coords
+            _coordinates[x] += _directions[_choice].X
+            _coordinates[y] += _directions[_choice].y
+        else
+            -- If options list is empty then mark the current cell as finalized
+            _plotted[_coordinates.y][_coordinates.x] = 2
         end
     end
+
+    if (_plotted[_coordinates.y][_coordinates.x] == 2) then
+        -- Same as previous neighboring cell step, but look for any neighboring cell that isn't finalized, not just unexplored
+        for i = 1, 4 do
+            if (_coordinates.x + _directions[i].x > 1 and _coordinates.x + _directions[i].x < _maxX - 1 and _coordinates.y + _directions[i].y > 1 and _coordinates.y + _directions[i].y < _maxY - 1 and _plotted[_coordinates.y + _directions[i].y][_coordinates.x + _directions[i].x] < 2) then
+                _options[#_options + 1] = i
+            end
+        end
+
+        -- If there are free spaces to move to, then...
+        if(#_options > 0) then
+            -- Select an available direction at random
+            _choice = flr(rnd(#_options)) + 1
+            print(_choice, 7)
+            -- Set intersecting square as empty space
+            _map[_coordinates.y + _directions[_choice].iy][_coordinates.x + _directions[_choice].ix] = 0
+            -- Set new coords
+            _coordinates.x += _directions._choice.X
+            _coordinates.y += _directions._choice.y
+        else
+            -- Done exploring! 
+            _genProg.plotComplete = true
+        end
+    end
+
+    _genProg.genMap = _genMap
+    _genProg.plotted = _plotted
+    _genProg.coords = _coordinates
+
+    return _genProg
 end
 
 
@@ -577,7 +649,7 @@ end
 
 -- where the magic happens
 function _init()
-    currentMap = generateMap(3, 3, 0, 0, 0, 0)
+    currentMap = generateMap(20, 20, 0, 0, 0, 0)
 end
 
 function _update()
@@ -598,7 +670,6 @@ function _draw()
     else
         print("ERROR", 8)
         print("Got lost! screenID: " .. screenID, 7)
-        break
     end
 end
 __gfx__
