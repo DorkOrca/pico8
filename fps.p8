@@ -1,4 +1,4 @@
-.pico-. cartridge // http://www.pico-8.com
+pico-8 cartridge // http://www.pico-8.com
 version 43
 __lua__
 -- fps - fish person shooter
@@ -552,7 +552,7 @@ function generateMap(_width, _height, _enemyCount, _goodiesCount, _difficulty, _
         _plotted = _genProg.plotted
         _currentCoords = _genProg.coords
         _stage += 1
-        print(_stage, 7)
+        print("STAGE ".._stage, 7)
 
         _plotComplete = _genProg.plotComplete
     end
@@ -571,8 +571,6 @@ function generateMaze(_genMap, _plotted, _coords)
 
     _genProg = {}
 
-    _choice = 0
-
     _genProg.plotComplete = false
 
     -- Set current coords to 0
@@ -587,11 +585,12 @@ function generateMaze(_genMap, _plotted, _coords)
         {x = 0, y = -2, ix = 0, iy = -1,},
     }
 
+    print(_coordinates.x..",".._coordinates.y, 7)
     -- If current cell isn't finalized, then search surroundings for unexplored cell and move to it
     if  (_plotted[_coordinates.y][_coordinates.x] < 2) then
         -- Check if neighboring cells are out-of-bounds and not yet explored; if not, then add them to list of potential options for dest cell
         for i = 1, 4 do
-            if (_coordinates.x + _directions[i].x > 1 and _coordinates.x + _directions[i].x < _maxX - 1 and _coordinates.y + _directions[i].y > 1 and _coordinates.y + _directions[i].y < _maxY - 1 and _plotted[_coordinates.y + _directions[i].y][_coordinates.x + _directions[i].x] == 0) then
+            if (_coordinates.x + _directions[i].x > 1 and _coordinates.x + _directions[i].x < _maxX and _coordinates.y + _directions[i].y > 1 and _coordinates.y + _directions[i].y < _maxY and _plotted[_coordinates.y + _directions[i].y][_coordinates.x + _directions[i].x] == 0) then
                 _options[#_options + 1] = i
             end
         end
@@ -603,10 +602,10 @@ function generateMaze(_genMap, _plotted, _coords)
             -- Plot current cell
             _plotted[_coordinates.y][_coordinates.x] = 1
             -- Set intersecting square as empty space
-            _map[_coordinates.y + _directions._choice.iy][_coordinates.x + _directions._choice.ix] = 0
+            _map[_coordinates.y + _directions[_choice].iy][_coordinates.x + _directions[_choice].ix] = 0
             -- Set new coords
-            _coordinates[x] += _directions[_choice].X
-            _coordinates[y] += _directions[_choice].y
+            _coordinates.x += _directions[_choice].x
+            _coordinates.y += _directions[_choice].y
         else
             -- If options list is empty then mark the current cell as finalized
             _plotted[_coordinates.y][_coordinates.x] = 2
@@ -615,8 +614,10 @@ function generateMaze(_genMap, _plotted, _coords)
 
     if (_plotted[_coordinates.y][_coordinates.x] == 2) then
         -- Same as previous neighboring cell step, but look for any neighboring cell that isn't finalized, not just unexplored
+        _options = {}
+        
         for i = 1, 4 do
-            if (_coordinates.x + _directions[i].x > 1 and _coordinates.x + _directions[i].x < _maxX - 1 and _coordinates.y + _directions[i].y > 1 and _coordinates.y + _directions[i].y < _maxY - 1 and _plotted[_coordinates.y + _directions[i].y][_coordinates.x + _directions[i].x] < 2) then
+            if (_coordinates.x + _directions[i].x > 1 and _coordinates.x + _directions[i].x < _maxX and _coordinates.y + _directions[i].y > 1 and _coordinates.y + _directions[i].y < _maxY and _plotted[_coordinates.y + _directions[i].y][_coordinates.x + _directions[i].x] < 2) then
                 _options[#_options + 1] = i
             end
         end
@@ -625,12 +626,16 @@ function generateMaze(_genMap, _plotted, _coords)
         if(#_options > 0) then
             -- Select an available direction at random
             _choice = flr(rnd(#_options)) + 1
-            print(_choice, 7)
             -- Set intersecting square as empty space
             _map[_coordinates.y + _directions[_choice].iy][_coordinates.x + _directions[_choice].ix] = 0
             -- Set new coords
-            _coordinates.x += _directions._choice.X
-            _coordinates.y += _directions._choice.y
+            if(_coordinates.x < 20) then
+                _coordinates.x += _directions[_choice].x
+            end
+
+            if(_coordinates.y < 20) then
+                _coordinates.y += _directions[_choice].y
+            end
         else
             -- Done exploring! 
             _genProg.plotComplete = true
