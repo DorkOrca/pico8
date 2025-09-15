@@ -62,6 +62,11 @@ mapB =
 currentMap = mapB
 currentCoords = {x = 2, y = 2,}
 mapPlot = {}
+seed = {}
+drawStage = 0
+drawSpeed = 100
+drawMe = true
+slowDraw = false
 
 --Player variables
 player = {}
@@ -74,7 +79,7 @@ player.FOV = 90
 
 --Screen IDs
 
-screenID = 1
+screenID = 0
 -- FUNCTIONS
 --Draw start screen
 function startScreen()
@@ -528,33 +533,73 @@ function generateMap(_width, _height, _enemyCount, _goodiesCount, _difficulty, _
     _genMap[2][2] = 0
     _plotted[2][2] = 0
 
-    -- Debug value
-    _stage = 0
-
     _plotComplete = false
 
-    _mapFrame = 0
+    _genSeed = {map = _genMap, plot = _plotted, ready = _plotComplete, coords = _currentCoords}
 
-    while (_plotComplete == false) do
-        _genProg = generateMaze(_genMap, _plotted, _currentCoords)
-        _genMap = _genProg.genMap
-        _plotted = _genProg.plotted
-        _currentCoords = _genProg.coords
-        _stage += 1
+    if (slowDraw == false) then
+        _seed = _genSeed
 
-        currentMap = _genMap
+        while (_seed.ready == false) do
+            _genProg = generateMaze(_seed.map, _seed.plot, _seed.coords)
+            _seed.map = _genProg.genMap
+            _seed.plot = _genProg.plotted
+            _seed.coords = _genProg.coords
+            
+            currentMap = _seed.map
 
-        _plotComplete = _genProg.plotComplete
-        
-        _mapFrame += 1
-        if(_mapFrame % 100 == 0) then
-            drawMap(currentMap, #currentMap[1], #currentMap)
-            mapFrame = 0
+            _seed.ready = _genProg.plotComplete
+            
+            if (drawMe == true) then
+                drawStage += 1
+                if(drawStage % drawSpeed == 0) then
+                    drawMap(currentMap, #currentMap[1], #currentMap)
+                    mapFrame = 0
+                end
+            else
+                print("Working...")
+            end
         end
+
+        _genSeed = _seed
     end
 
-    print("Map gen completed", 7)
-    return _genMap
+    return _genSeed
+end
+
+function stageMaze()
+    _seed = seed
+
+    if (slowDraw == true) then
+        if (_seed.ready == false) then
+            _genProg = generateMaze(_seed.map, _seed.plot, _seed.coords)
+            _seed.map = _genProg.genMap
+            _seed.plot = _genProg.plotted
+            _seed.coords = _genProg.coords
+            
+            currentMap = _seed.map
+
+            _seed.ready = _genProg.plotComplete
+            
+            if (drawMe == true) then
+                drawStage += 1
+                if(drawStage % drawSpeed == 0) then
+                    drawMap(currentMap, #currentMap[1], #currentMap)
+                    mapFrame = 0
+                end
+            else
+                print("Working...")
+            end
+        end
+    else
+        _seed.ready = true
+    end
+
+    seed = _seed
+
+    if (seed.ready == true) then
+        screenID = 1
+    end
 end
 
 function generateMaze(_genMap, _plotted, _coords)
@@ -668,15 +713,18 @@ end
 
 -- where the magic happens
 function _init()
-    currentMap = generateMap(128, 128, 0, 0, 0, 0)
+    seed = generateMap(32, 32, 0, 0, 0, 0)
+    currentMap = seed.map
 end
 
 function _update()
+    
 end
 
 function _draw()
     local c_tbl =
     {
+        [0] = stageMaze,
         [1] = startScreen,
         [2] = menuSelect,
         [3] = drawRoom
