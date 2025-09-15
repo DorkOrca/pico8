@@ -60,6 +60,8 @@ mapB =
 }
 
 currentMap = mapB
+currentCoords = {x = 2, y = 2,}
+mapPlot = {}
 
 --Player variables
 player = {}
@@ -416,8 +418,6 @@ function move(_x, _y, _xDist, _yDist)
     _moveDist = {}
     _mapObjects = mapObjectCollision(currentMap, _x, _y, _xDist, _yDist)
 
-    print(_mapObjects[x], 0)
-    print(_mapObjects[y], 0)
     _moveDist[x] = _mapObjects[x] == 0 and 0 or mapEdgeCollision(_x, _xDist, #currentMap)
     _moveDist[y] = _mapObjects[y] == 0 and 0 or mapEdgeCollision(_y, _yDist, #currentMap[1])
 
@@ -428,9 +428,9 @@ end
 function movePlayer()
     -- Rotate player
     if(btn(0)) then
-        player.zRot += 3
+        player.zRot += 5
     elseif(btn(1)) then
-        player.zRot -= 3
+        player.zRot -= 5
     end
 
     -- Move player forward / backward, determining direction speed 
@@ -458,39 +458,28 @@ end
 
 -- Map functions
 function drawMap(mapVal, width, height)
-    prevX = 0
-    prevY = 0
-    mapWidth = 128 / width
-    mapHeight = 128 / height
+    _prevX = 0
+    _prevY = 0
+    _mapWidth = 128 / width
+    _mapHeight = 128 / height
 
     for i = 1, #mapVal do
         for j = 1, #mapVal[i] do
-            rectfill(prevX, prevY, j * (mapWidth / #mapVal), i * (mapHeight / #mapVal[i]), mapVal[i][j])
-            -- -- Print coords for every square drawn (bug testing)
-            -- print(j .. "," .. i, prevX, prevY, 4)
-            prevX = j * (mapWidth / #mapVal)
+            -- rectfill(_prevX, _prevY, j * _mapWidth, i * _mapHeight, mapPlot[i][j])
+            if(mapPlot[i][j] != 0 and i != 1 and i != #mapVal and j != 1 and j != #mapVal[i]) then
+                rectfill(_prevX, _prevY, j * _mapWidth, i * _mapHeight, 12)
+            else
+                rectfill(_prevX, _prevY, j * _mapWidth, i * _mapHeight, mapPlot[i][j])
+            end
+            _prevX = j * _mapWidth
         end
-    
-        prevX = 0
-        prevY = i * (mapHeight / #mapVal[i])
+        _prevX = 0
+        _prevY = i * _mapHeight
     end
 
-    circfill((player.xPos / cellSize) * mapWidth, (player.yPos / cellSize) * mapHeight, 1, 7)
-end
+    -- rectfill(currentCoords.x * _mapWidth, currentCoords.y * _mapHeight, (currentCoords.x * _mapWidth) - _mapWidth, (currentCoords.y * _mapHeight) - _mapHeight, 9)
 
-function debugRoom()
-    print("ix: "..ix,0,0,7)
-    print("iy: "..iy,0,8,7)
-    print("vx: "..vx,0, 16,7)
-    print("vy: "..vy,0,24,7)
-    print("ox: "..ox,0,32,7)
-    print("oy: "..oy,0,40,7)
-    print("x: "..x,0,48,8)
-    print("y: "..y,0,56,8)
-    print("d: "..d,0,64,9)
-    print("h: "..h,0,72,9)
-    print("dx: "..dx,0,80,7)
-    print("dy: "..dy,0,88,7)
+    -- circfill(((player.xPos / cellSize) - 1) * _mapWidth, ((player.yPos / cellSize) - 1) * _mapHeight, 1, 7)
 end
 
 function drawRoom()
@@ -498,8 +487,6 @@ function drawRoom()
     rectfill(0,0,127,64,7)
     raycast()
     movePlayer()
-    drawMap(currentMap, 4, 4)
-    
 end
 
 
@@ -546,15 +533,24 @@ function generateMap(_width, _height, _enemyCount, _goodiesCount, _difficulty, _
 
     _plotComplete = false
 
+    _mapFrame = 0
+
     while (_plotComplete == false) do
         _genProg = generateMaze(_genMap, _plotted, _currentCoords)
         _genMap = _genProg.genMap
         _plotted = _genProg.plotted
         _currentCoords = _genProg.coords
         _stage += 1
-        print("STAGE ".._stage, 7)
+
+        currentMap = _genMap
 
         _plotComplete = _genProg.plotComplete
+        
+        _mapFrame += 1
+        if(_mapFrame % 100 == 0) then
+            drawMap(currentMap, #currentMap[1], #currentMap)
+            mapFrame = 0
+        end
     end
 
     print("Map gen completed", 7)
@@ -585,9 +581,8 @@ function generateMaze(_genMap, _plotted, _coords)
         {x = 0, y = -2, ix = 0, iy = -1,},
     }
 
-    print(_coordinates.x..",".._coordinates.y, 7)
     -- If current cell isn't finalized, then search surroundings for unexplored cell and move to it
-    if  (_plotted[_coordinates.y][_coordinates.x] < 2) then
+    if (_plotted[_coordinates.y][_coordinates.x] < 2) then
         -- Check if neighboring cells are out-of-bounds and not yet explored; if not, then add them to list of potential options for dest cell
         for i = 1, 4 do
             if (_coordinates.x + _directions[i].x > 1 and _coordinates.x + _directions[i].x < _maxX and _coordinates.y + _directions[i].y > 1 and _coordinates.y + _directions[i].y < _maxY and _plotted[_coordinates.y + _directions[i].y][_coordinates.x + _directions[i].x] == 0) then
@@ -596,11 +591,22 @@ function generateMaze(_genMap, _plotted, _coords)
         end
 
         -- If options list isn't empty...
-        if(#_options > 0) then
-            --  Set choice to any of the option tables at random
-            _choice = flr(rnd(#_options)) + 1
-            -- Plot current cell
-            _plotted[_coordinates.y][_coordinates.x] = 1
+        if (#_options > 0) then
+            if (#_options > 1) then
+                --  Set choice to any of the option tables at random
+                _choice = _options[flr(rnd(#_options)) + 1]
+                -- Plot current cell as explored
+                _plotted[_coordinates.y][_coordinates.x] = 1
+                -- Plot intersecting cell as explored
+                _plotted[_coordinates.y + _directions[_choice].iy][_coordinates.x + _directions[_choice].ix] = 1
+            else
+                -- Set choice to the only choice available
+                _choice = _options[1]
+                -- Plot current cell as finalized
+                _plotted[_coordinates.y][_coordinates.x] = 2
+                -- Plot intersecting cell as explored
+                _plotted[_coordinates.y + _directions[_choice].iy][_coordinates.x + _directions[_choice].ix] = 1
+            end
             -- Set intersecting square as empty space
             _map[_coordinates.y + _directions[_choice].iy][_coordinates.x + _directions[_choice].ix] = 0
             -- Set new coords
@@ -610,12 +616,10 @@ function generateMaze(_genMap, _plotted, _coords)
             -- If options list is empty then mark the current cell as finalized
             _plotted[_coordinates.y][_coordinates.x] = 2
         end
-    end
-
-    if (_plotted[_coordinates.y][_coordinates.x] == 2) then
-        -- Same as previous neighboring cell step, but look for any neighboring cell that isn't finalized, not just unexplored
+    elseif (_plotted[_coordinates.y][_coordinates.x] == 2) then
         _options = {}
-        
+
+        -- Same as previous neighboring cell step, but look for any neighboring cell that isn't finalized, not just unexplored
         for i = 1, 4 do
             if (_coordinates.x + _directions[i].x > 1 and _coordinates.x + _directions[i].x < _maxX and _coordinates.y + _directions[i].y > 1 and _coordinates.y + _directions[i].y < _maxY and _plotted[_coordinates.y + _directions[i].y][_coordinates.x + _directions[i].x] < 2) then
                 _options[#_options + 1] = i
@@ -625,26 +629,36 @@ function generateMaze(_genMap, _plotted, _coords)
         -- If there are free spaces to move to, then...
         if(#_options > 0) then
             -- Select an available direction at random
-            _choice = flr(rnd(#_options)) + 1
-            -- Set intersecting square as empty space
-            _map[_coordinates.y + _directions[_choice].iy][_coordinates.x + _directions[_choice].ix] = 0
+            _choice = _options[flr(rnd(#_options)) + 1]
             -- Set new coords
-            if(_coordinates.x < 20) then
-                _coordinates.x += _directions[_choice].x
+            _coordinates.x += _directions[_choice].x
+            _coordinates.y += _directions[_choice].y
+        else
+            _solved = false
+            for i = 1, flr(#_genMap / 2) do
+                for j = 1, flr(#_genMap[1] / 2) do
+                    if (_plotted[i * 2][j * 2] == 1 and _solved == false) then
+                        _coordinates.x = j * 2
+                        _coordinates.y = i * 2
+                        _solved = true
+                    end
+                end
             end
 
-            if(_coordinates.y < 20) then
-                _coordinates.y += _directions[_choice].y
+            if (_solved == false) then
+                -- Done exploring! 
+                _genProg.plotComplete = true
             end
-        else
-            -- Done exploring! 
-            _genProg.plotComplete = true
         end
     end
 
     _genProg.genMap = _genMap
     _genProg.plotted = _plotted
     _genProg.coords = _coordinates
+
+    mapPlot = _plotted
+    currentCoords.x = _coordinates.x
+    currentCoords.y = _coordinates.y
 
     return _genProg
 end
@@ -654,7 +668,7 @@ end
 
 -- where the magic happens
 function _init()
-    currentMap = generateMap(20, 20, 0, 0, 0, 0)
+    currentMap = generateMap(128, 128, 0, 0, 0, 0)
 end
 
 function _update()
