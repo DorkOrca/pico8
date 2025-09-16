@@ -66,7 +66,7 @@ seed = {}
 drawStage = 0
 drawSpeed = 1
 drawMe = true
-slowDraw = false
+slowDraw = true
 
 --Player variables
 player = {}
